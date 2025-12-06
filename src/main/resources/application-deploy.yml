@@ -1,0 +1,6 @@
+spring:
+  datasource:
+    url: ${WEBSTORE_PG_URL}
+    username: ${WEBSTORE_PG_USER}
+    password: ${WEBSTORE_PG_PASS}
+
