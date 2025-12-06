@@ -1,0 +1,13 @@
+spring:
+  profiles:
+    active: local
+  application:
+    name:
+      StoreFeedService
+
+server:
+  servlet:
+    context-path: /api/v1/feed
+  port: 8081
+
+
