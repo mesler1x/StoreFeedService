@@ -18,10 +18,10 @@ public class UserStarRepository {
     @Transactional
     public void save(UUID userId, UUID feedId) {
         var sql = """
-            INSERT INTO user_star (user_id, feed_id)
-            VALUES (:userId, :feedId)
-            ON CONFLICT (user_id, feed_id) DO NOTHING
-            """;
+                INSERT INTO user_star (user_id, feed_id)
+                VALUES (:userId, :feedId)
+                ON CONFLICT (user_id, feed_id) DO NOTHING
+                """;
 
         var params = new MapSqlParameterSource()
                 .addValue("userId", userId)
@@ -42,9 +42,9 @@ public class UserStarRepository {
 
     public boolean existsByUserIdAndFeedId(UUID userId, UUID feedId) {
         var sql = """
-            SELECT COUNT(*) FROM user_star 
-            WHERE user_id = :userId AND feed_id = :feedId
-            """;
+                SELECT COUNT(*) FROM user_star 
+                WHERE user_id = :userId AND feed_id = :feedId
+                """;
 
         var params = new MapSqlParameterSource()
                 .addValue("userId", userId)

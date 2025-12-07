@@ -1,13 +1,9 @@
 package ru.urfu.store.feed.repository;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Repository;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import ru.urfu.store.feed.model.Feed;
 import ru.urfu.store.feed.model.dto.Paging;
@@ -18,7 +14,6 @@ import java.sql.Timestamp;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -64,10 +59,10 @@ public class FeedRepository {
 
     private Feed insert(Feed feed) {
         var sql = """
-            INSERT INTO feed (title, text, created, updated)
-            VALUES (:title, :text, :created, :updated)
-            RETURNING id
-            """;
+                INSERT INTO feed (title, text, created, updated)
+                VALUES (:title, :text, :created, :updated)
+                RETURNING id
+                """;
 
         var params = new MapSqlParameterSource()
                 .addValue("title", feed.getTitle())
@@ -82,12 +77,12 @@ public class FeedRepository {
 
     private Feed update(Feed feed) {
         var sql = """
-            UPDATE feed 
-            SET title = :title, 
-                text = :text, 
-                updated = :updated
-            WHERE id = :id
-            """;
+                UPDATE feed 
+                SET title = :title, 
+                    text = :text, 
+                    updated = :updated
+                WHERE id = :id
+                """;
 
         feed.setUpdated(ZonedDateTime.now());
 
@@ -103,33 +98,33 @@ public class FeedRepository {
 
     public Optional<Feed> findById(UUID id) {
         var sql = """
-        SELECT 
-            f.id,
-            f.title,
-            f.text,
-            f.created,
-            f.updated,
-            f.watch_count,
-            COALESCE(ul.likes_count, 0) AS likes_count,
-            COALESCE(c.comments_count, 0) AS comments_count
-        FROM feed f
-        LEFT JOIN (
-            SELECT feed_id, COUNT(*) AS likes_count 
-            FROM user_like 
-            GROUP BY feed_id
-        ) ul ON f.id = ul.feed_id
-        LEFT JOIN (
-            SELECT feed_id, COUNT(*) AS stars_count 
-            FROM user_star 
-            GROUP BY feed_id
-        ) us ON f.id = us.feed_id
-        LEFT JOIN (
-            SELECT feed_id, COUNT(*) AS comments_count 
-            FROM comment 
-            GROUP BY feed_id
-        ) c ON f.id = c.feed_id
-        WHERE f.id = :id
-        """;
+                SELECT 
+                    f.id,
+                    f.title,
+                    f.text,
+                    f.created,
+                    f.updated,
+                    f.watch_count,
+                    COALESCE(ul.likes_count, 0) AS likes_count,
+                    COALESCE(c.comments_count, 0) AS comments_count
+                FROM feed f
+                LEFT JOIN (
+                    SELECT feed_id, COUNT(*) AS likes_count 
+                    FROM user_like 
+                    GROUP BY feed_id
+                ) ul ON f.id = ul.feed_id
+                LEFT JOIN (
+                    SELECT feed_id, COUNT(*) AS stars_count 
+                    FROM user_star 
+                    GROUP BY feed_id
+                ) us ON f.id = us.feed_id
+                LEFT JOIN (
+                    SELECT feed_id, COUNT(*) AS comments_count 
+                    FROM comment 
+                    GROUP BY feed_id
+                ) c ON f.id = c.feed_id
+                WHERE f.id = :id
+                """;
 
         var params = new MapSqlParameterSource().addValue("id", id);
 
@@ -143,29 +138,29 @@ public class FeedRepository {
         var total = jdbcTemplate.queryForObject(countSql, new MapSqlParameterSource(), Long.class);
 
         var sql = """
-        SELECT 
-            f.*,
-            COALESCE(l.likes_count, 0) AS likes_count,
-            COALESCE(c.comments_count, 0) AS comments_count
-        FROM feed f
-        LEFT JOIN (
-            SELECT feed_id, COUNT(*) AS likes_count 
-            FROM user_like 
-            GROUP BY feed_id
-        ) l ON f.id = l.feed_id
-        LEFT JOIN (
-            SELECT feed_id, COUNT(*) AS stars_count 
-            FROM user_star 
-            GROUP BY feed_id
-        ) s ON f.id = s.feed_id
-        LEFT JOIN (
-            SELECT feed_id, COUNT(*) AS comments_count 
-            FROM comment 
-            GROUP BY feed_id
-        ) c ON f.id = c.feed_id
-        ORDER BY f.created DESC 
-        LIMIT :limit OFFSET :offset
-        """;
+                SELECT 
+                    f.*,
+                    COALESCE(l.likes_count, 0) AS likes_count,
+                    COALESCE(c.comments_count, 0) AS comments_count
+                FROM feed f
+                LEFT JOIN (
+                    SELECT feed_id, COUNT(*) AS likes_count 
+                    FROM user_like 
+                    GROUP BY feed_id
+                ) l ON f.id = l.feed_id
+                LEFT JOIN (
+                    SELECT feed_id, COUNT(*) AS stars_count 
+                    FROM user_star 
+                    GROUP BY feed_id
+                ) s ON f.id = s.feed_id
+                LEFT JOIN (
+                    SELECT feed_id, COUNT(*) AS comments_count 
+                    FROM comment 
+                    GROUP BY feed_id
+                ) c ON f.id = c.feed_id
+                ORDER BY f.created DESC 
+                LIMIT :limit OFFSET :offset
+                """;
 
         var params = new MapSqlParameterSource()
                 .addValue("limit", limit)
@@ -209,11 +204,11 @@ public class FeedRepository {
     @Transactional
     public void incrementLikesCount(UUID feedId, UUID userId) {
         var sql = """
-            
-                INSERT INTO user_like(user_id, feed_id) VALUES (
-                    :userId, :feedId                                                
-                ) ON CONFLICT DO NOTHING
-            """;
+                
+                    INSERT INTO user_like(user_id, feed_id) VALUES (
+                        :userId, :feedId                                                
+                    ) ON CONFLICT DO NOTHING
+                """;
 
         var params = new MapSqlParameterSource()
                 .addValue("feedId", feedId)
@@ -224,11 +219,11 @@ public class FeedRepository {
     @Transactional
     public void incrementWatchCount(UUID feedId) {
         var sql = """
-            UPDATE feed 
-            SET watch_count = watch_count + 1,
-                updated = NOW()
-            WHERE id = :id
-            """;
+                UPDATE feed 
+                SET watch_count = watch_count + 1,
+                    updated = NOW()
+                WHERE id = :id
+                """;
 
         var params = new MapSqlParameterSource().addValue("id", feedId);
         jdbcTemplate.update(sql, params);
@@ -237,11 +232,11 @@ public class FeedRepository {
     @Transactional
     public void incrementCommentsCount(UUID feedId) {
         var sql = """
-            UPDATE feed 
-            SET comments_count = comments_count + 1,
-                updated = NOW()
-            WHERE id = :id
-            """;
+                UPDATE feed 
+                SET comments_count = comments_count + 1,
+                    updated = NOW()
+                WHERE id = :id
+                """;
 
         var params = new MapSqlParameterSource().addValue("id", feedId);
         jdbcTemplate.update(sql, params);

@@ -55,10 +55,10 @@ public class CommentRepository {
 
     private Comment insert(Comment comment) {
         var sql = """
-            INSERT INTO comment (text, user_id, feed_id, created, updated)
-            VALUES (:text, :userId, :feedId, :created, :updated)
-            RETURNING id
-            """;
+                INSERT INTO comment (text, user_id, feed_id, created, updated)
+                VALUES (:text, :userId, :feedId, :created, :updated)
+                RETURNING id
+                """;
 
         var params = new MapSqlParameterSource()
                 .addValue("text", comment.getText())
@@ -74,11 +74,11 @@ public class CommentRepository {
 
     private Comment update(Comment comment) {
         var sql = """
-            UPDATE comment 
-            SET text = :text, 
-                updated = :updated
-            WHERE id = :id
-            """;
+                UPDATE comment 
+                SET text = :text, 
+                    updated = :updated
+                WHERE id = :id
+                """;
 
         comment.setUpdated(ZonedDateTime.now());
 

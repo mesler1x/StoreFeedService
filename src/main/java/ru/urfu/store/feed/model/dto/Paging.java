@@ -11,7 +11,7 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Paging <T> {
+public class Paging<T> {
     Long totalCount;
     Integer limit;
     Integer offset;

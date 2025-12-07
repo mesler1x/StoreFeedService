@@ -84,8 +84,8 @@ public class FeedService {
             throw new ResourceNotFoundException("Feed not found with id: " + feedId);
         }
 
-            userStarRepository.delete(userId, feedId);
-            feedRepository.decrementLikesCount(feedId, userId);
+        userStarRepository.delete(userId, feedId);
+        feedRepository.decrementLikesCount(feedId, userId);
     }
 
     @Transactional
