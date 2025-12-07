@@ -32,7 +32,8 @@ public class FeedService {
     }
 
     public FeedDto getFeed(UUID id) {
-        incrementWatchCount(id);
+        feedRepository.incrementWatchCount(id);
+
 
         var feed = feedRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Feed not found with id: " + id));
@@ -44,7 +45,8 @@ public class FeedService {
         var result = feedRepository.findAll(limit, offset);
         var dtoList = result.getCurrentValues().stream()
                 .map(this::mapToDto)
-                .peek(dto -> incrementWatchCount(dto.getId())).toList();
+                .peek(dto -> feedRepository.incrementWatchCount(dto.getId()))
+                .toList();
         return new Paging<>(result.getTotalCount(), result.getLimit(), result.getOffset(), dtoList);
     }
 
@@ -66,6 +68,7 @@ public class FeedService {
         }
 
         commentRepository.deleteByFeedId(id);
+        userStarRepository.delete(id);
         feedRepository.deleteLikes(id);
         feedRepository.deleteById(id);
     }
@@ -84,13 +87,8 @@ public class FeedService {
             throw new ResourceNotFoundException("Feed not found with id: " + feedId);
         }
 
-        userStarRepository.delete(userId, feedId);
+        userStarRepository.unStar(userId, feedId);
         feedRepository.decrementLikesCount(feedId, userId);
-    }
-
-    @Transactional
-    public void incrementWatchCount(UUID feedId) {
-        feedRepository.incrementWatchCount(feedId);
     }
 
     @Transactional
@@ -106,6 +104,31 @@ public class FeedService {
                 .build();
 
         return commentRepository.save(comment);
+    }
+
+    public void starFeed(UUID feedId, UUID userId) {
+        if (!feedRepository.existsById(feedId)) {
+            throw new ResourceNotFoundException("Feed not found with id: " + feedId);
+        }
+
+        userStarRepository.star(userId, feedId);
+    }
+
+    public void unStarFeed(UUID feedId, UUID userId) {
+        if (!feedRepository.existsById(feedId)) {
+            throw new ResourceNotFoundException("Feed not found with id: " + feedId);
+        }
+
+        userStarRepository.unStar(userId, feedId);
+    }
+
+    public Paging<FeedDto> getFavourites(UUID userId, Integer limit, Integer offset) {
+        var result = feedRepository.findAllStarred(userId, limit, offset);
+        var dtoList = result.getCurrentValues().stream()
+                .map(this::mapToDto)
+                .peek(dto -> feedRepository.incrementWatchCount(dto.getId()))
+                .toList();
+        return new Paging<>(result.getTotalCount(), result.getLimit(), result.getOffset(), dtoList);
     }
 
     private FeedDto mapToDto(Feed feed) {

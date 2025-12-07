@@ -264,4 +264,46 @@ public class FeedRepository {
 
         );
     }
+
+    public Paging<Feed> findAllStarred(UUID userId, Integer limit, Integer offset) {
+        var countSql = "SELECT COUNT(f.*) FROM feed f JOIN user_star us on us.feed_id = f.id WHERE user_id = :userId";
+        var total = jdbcTemplate.queryForObject(countSql, new MapSqlParameterSource().addValue(
+                "userId", userId
+        ), Long.class);
+
+        var sql = """
+                SELECT 
+                    f.*,
+                    COALESCE(l.likes_count, 0) AS likes_count,
+                    COALESCE(c.comments_count, 0) AS comments_count
+                FROM feed f
+                INNER JOIN (
+                    SELECT feed_id, COUNT(*) AS stars_count 
+                    FROM user_star 
+                    WHERE user_id = :userId
+                    GROUP BY feed_id, user_id
+                ) s ON f.id = s.feed_id
+                LEFT JOIN (
+                    SELECT feed_id, COUNT(*) AS likes_count 
+                    FROM user_like 
+                    GROUP BY feed_id
+                ) l ON f.id = l.feed_id
+                LEFT JOIN (
+                    SELECT feed_id, COUNT(*) AS comments_count 
+                    FROM comment 
+                    GROUP BY feed_id
+                ) c ON f.id = c.feed_id
+                ORDER BY f.created DESC 
+                LIMIT :limit OFFSET :offset
+                """;
+
+        var params = new MapSqlParameterSource()
+                .addValue("userId", userId)
+                .addValue("limit", limit)
+                .addValue("offset", offset);
+
+        var feeds = jdbcTemplate.query(sql, params, this::mapRowWithCounts);
+
+        return new Paging<>(total, limit, offset, feeds);
+    }
 }

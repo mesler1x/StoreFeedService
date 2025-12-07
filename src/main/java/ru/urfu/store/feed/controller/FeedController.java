@@ -26,12 +26,12 @@ public class FeedController {
         return feedService.createFeed(request);
     }
 
-    @Operation(summary = "Получение информации о новости по id")
+    @Operation(summary = "Получение информации о новости по feedId")
     @GetMapping("/{feed_id}")
     public FeedDto getFeed(
-            @PathVariable(name = "feed_id") UUID id
+            @PathVariable(name = "feed_id") UUID feedId
     ) {
-        return feedService.getFeed(id);
+        return feedService.getFeed(feedId);
     }
 
     @Operation(summary = "Получение всех новостей")
@@ -47,34 +47,34 @@ public class FeedController {
     @Operation(summary = "Обновить новость")
     @PutMapping("/{feed_id}")
     public FeedDto updateFeed(
-            @PathVariable(name = "feed_id") UUID id,
+            @PathVariable(name = "feed_id") UUID feedId,
             @Valid @RequestBody UpdateFeedRequest request) {
-        return feedService.updateFeed(id, request);
+        return feedService.updateFeed(feedId, request);
     }
 
     @Operation(summary = "Удалить новость")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @DeleteMapping("/{feed_id}")
     public void deleteFeed(
-            @PathVariable(name = "feed_id") UUID id
+            @PathVariable(name = "feed_id") UUID feedId
     ) {
-        feedService.deleteFeed(id);
+        feedService.deleteFeed(feedId);
     }
 
     @Operation(summary = "Лайкнуть новость")
     @PostMapping("/{feed_id}/like")
     public void likeFeed(
-            @PathVariable(name = "feed_id") UUID id,
+            @PathVariable(name = "feed_id") UUID feedId,
             @RequestParam(name = "user_id") UUID userId) {
-        feedService.likeFeed(id, userId);
+        feedService.likeFeed(feedId, userId);
     }
 
     @Operation(summary = "Удалить лайк новости")
-    @PostMapping("/{feed_id}/unlike")
+    @DeleteMapping("/{feed_id}/unlike")
     public void unlikeFeed(
-            @PathVariable(name = "feed_id") UUID id,
+            @PathVariable(name = "feed_id") UUID feedId,
             @RequestParam(name = "user_id") UUID userId) {
-        feedService.unlikeFeed(id, userId);
+        feedService.unlikeFeed(feedId, userId);
     }
 
     @Operation(summary = "Оставить комментарий к новости")
@@ -83,5 +83,35 @@ public class FeedController {
     public Comment addComment(
             @Valid @RequestBody CommentRequest request) {
         return feedService.addComment(request);
+    }
+
+    @Operation(summary = "Добавить новость в избранное")
+    @PostMapping("{feed_id}/star")
+    public void starFeed(
+            @PathVariable(name = "feed_id") UUID feedId,
+            @RequestParam(name = "user_id") UUID userId
+    ) {
+        feedService.starFeed(feedId, userId);
+    }
+
+    @Operation(summary = "Убрать новость из избранного")
+    @DeleteMapping("{feed_id}/unstar")
+    public void unStarFeed(
+            @PathVariable(name = "feed_id") UUID feedId,
+            @RequestParam(name = "user_id") UUID userId
+    ) {
+        feedService.unStarFeed(feedId, userId);
+    }
+
+    @Operation(summary = "Показать избранное")
+    @GetMapping("/favourites")
+    public Paging<FeedDto> getFavourites(
+            @RequestParam(name = "user_id") UUID userId,
+            @RequestParam(name = "limit", required = false, defaultValue = "100")
+            Integer limit,
+            @RequestParam(name = "offset", required = false, defaultValue = "0")
+            Integer offset
+    ) {
+        return feedService.getFavourites(userId, limit, offset);
     }
 }

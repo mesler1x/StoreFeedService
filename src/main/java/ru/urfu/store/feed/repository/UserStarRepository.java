@@ -6,7 +6,6 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -16,7 +15,7 @@ public class UserStarRepository {
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     @Transactional
-    public void save(UUID userId, UUID feedId) {
+    public void star(UUID userId, UUID feedId) {
         var sql = """
                 INSERT INTO user_star (user_id, feed_id)
                 VALUES (:userId, :feedId)
@@ -31,7 +30,7 @@ public class UserStarRepository {
     }
 
     @Transactional
-    public void delete(UUID userId, UUID feedId) {
+    public void unStar(UUID userId, UUID feedId) {
         var sql = "DELETE FROM user_star WHERE user_id = :userId AND feed_id = :feedId";
         var params = new MapSqlParameterSource()
                 .addValue("userId", userId)
@@ -40,24 +39,12 @@ public class UserStarRepository {
         jdbcTemplate.update(sql, params);
     }
 
-    public boolean existsByUserIdAndFeedId(UUID userId, UUID feedId) {
-        var sql = """
-                SELECT COUNT(*) FROM user_star 
-                WHERE user_id = :userId AND feed_id = :feedId
-                """;
-
+    @Transactional
+    public void delete(UUID feedId) {
+        var sql = "DELETE FROM user_star WHERE feed_id = :feedId";
         var params = new MapSqlParameterSource()
-                .addValue("userId", userId)
                 .addValue("feedId", feedId);
 
-        var count = jdbcTemplate.queryForObject(sql, params, Integer.class);
-        return count != null && count > 0;
-    }
-
-    public List<UUID> findFeedIdsByUserId(UUID userId) {
-        var sql = "SELECT feed_id FROM user_star WHERE user_id = :userId";
-        var params = new MapSqlParameterSource().addValue("userId", userId);
-
-        return jdbcTemplate.queryForList(sql, params, UUID.class);
+        jdbcTemplate.update(sql, params);
     }
 }
