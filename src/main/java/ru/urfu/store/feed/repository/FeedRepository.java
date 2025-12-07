@@ -15,6 +15,7 @@ import ru.urfu.store.feed.model.dto.Paging;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -63,17 +64,14 @@ public class FeedRepository {
 
     private Feed insert(Feed feed) {
         var sql = """
-            INSERT INTO feed (title, text, likes_count, watch_count, comments_count, created, updated)
-            VALUES (:title, :text, :likesCount, :watchCount, :commentsCount, :created, :updated)
+            INSERT INTO feed (title, text, created, updated)
+            VALUES (:title, :text, :created, :updated)
             RETURNING id
             """;
 
         var params = new MapSqlParameterSource()
                 .addValue("title", feed.getTitle())
                 .addValue("text", feed.getText())
-                .addValue("likesCount", feed.getLikesCount())
-                .addValue("watchCount", feed.getWatchCount())
-                .addValue("commentsCount", feed.getCommentsCount())
                 .addValue("created", convertToTimestamp(feed.getCreated()))
                 .addValue("updated", convertToTimestamp(feed.getUpdated()));
 
@@ -104,10 +102,38 @@ public class FeedRepository {
     }
 
     public Optional<Feed> findById(UUID id) {
-        var sql = "SELECT * FROM feed WHERE id = :id";
+        var sql = """
+        SELECT 
+            f.id,
+            f.title,
+            f.text,
+            f.created,
+            f.updated,
+            f.watch_count,
+            COALESCE(ul.likes_count, 0) AS likes_count,
+            COALESCE(c.comments_count, 0) AS comments_count
+        FROM feed f
+        LEFT JOIN (
+            SELECT feed_id, COUNT(*) AS likes_count 
+            FROM user_like 
+            GROUP BY feed_id
+        ) ul ON f.id = ul.feed_id
+        LEFT JOIN (
+            SELECT feed_id, COUNT(*) AS stars_count 
+            FROM user_star 
+            GROUP BY feed_id
+        ) us ON f.id = us.feed_id
+        LEFT JOIN (
+            SELECT feed_id, COUNT(*) AS comments_count 
+            FROM comment 
+            GROUP BY feed_id
+        ) c ON f.id = c.feed_id
+        WHERE f.id = :id
+        """;
 
         var params = new MapSqlParameterSource().addValue("id", id);
-        var feeds = jdbcTemplate.query(sql, params, this::mapRow);
+
+        var feeds = jdbcTemplate.query(sql, params, this::mapRowWithCounts);
 
         return feeds.stream().findFirst();
     }
@@ -117,18 +143,52 @@ public class FeedRepository {
         var total = jdbcTemplate.queryForObject(countSql, new MapSqlParameterSource(), Long.class);
 
         var sql = """
-            SELECT * FROM feed 
-            ORDER BY created DESC 
-            LIMIT :limit OFFSET :offset
-            """;
+        SELECT 
+            f.*,
+            COALESCE(l.likes_count, 0) AS likes_count,
+            COALESCE(c.comments_count, 0) AS comments_count
+        FROM feed f
+        LEFT JOIN (
+            SELECT feed_id, COUNT(*) AS likes_count 
+            FROM user_like 
+            GROUP BY feed_id
+        ) l ON f.id = l.feed_id
+        LEFT JOIN (
+            SELECT feed_id, COUNT(*) AS stars_count 
+            FROM user_star 
+            GROUP BY feed_id
+        ) s ON f.id = s.feed_id
+        LEFT JOIN (
+            SELECT feed_id, COUNT(*) AS comments_count 
+            FROM comment 
+            GROUP BY feed_id
+        ) c ON f.id = c.feed_id
+        ORDER BY f.created DESC 
+        LIMIT :limit OFFSET :offset
+        """;
 
         var params = new MapSqlParameterSource()
                 .addValue("limit", limit)
                 .addValue("offset", offset);
 
-        var feeds = jdbcTemplate.query(sql, params, this::mapRow);
+        var feeds = jdbcTemplate.query(sql, params, this::mapRowWithCounts);
 
         return new Paging<>(total, limit, offset, feeds);
+    }
+
+    private Feed mapRowWithCounts(ResultSet rs, int rowNum) throws SQLException {
+        return Feed.builder()
+                .id(rs.getObject("id", UUID.class))
+                .title(rs.getString("title"))
+                .text(rs.getString("text"))
+                .likesCount(rs.getLong("likes_count"))
+                .watchCount(rs.getLong("watch_count"))
+                .commentsCount(rs.getLong("comments_count"))
+                .created(rs.getObject("created", OffsetDateTime.class).toZonedDateTime())
+                .updated(Optional.ofNullable(rs.getObject("updated", OffsetDateTime.class))
+                        .map(OffsetDateTime::toZonedDateTime)
+                        .orElse(null))
+                .build();
     }
 
     @Transactional
@@ -147,15 +207,17 @@ public class FeedRepository {
     }
 
     @Transactional
-    public void incrementLikesCount(UUID feedId) {
+    public void incrementLikesCount(UUID feedId, UUID userId) {
         var sql = """
-            UPDATE feed 
-            SET likes_count = likes_count + 1,
-                updated = NOW()
-            WHERE id = :id
+            
+                INSERT INTO user_like(user_id, feed_id) VALUES (
+                    :userId, :feedId                                                
+                ) ON CONFLICT DO NOTHING
             """;
 
-        var params = new MapSqlParameterSource().addValue("id", feedId);
+        var params = new MapSqlParameterSource()
+                .addValue("feedId", feedId)
+                .addValue("userId", userId);
         jdbcTemplate.update(sql, params);
     }
 
@@ -186,15 +248,25 @@ public class FeedRepository {
     }
 
     @Transactional
-    public void decrementLikesCount(UUID feedId) {
-        var sql = """
-            UPDATE feed 
-            SET likes_count = GREATEST(likes_count - 1, 0),
-                updated = NOW()
-            WHERE id = :id
-            """;
+    public void decrementLikesCount(UUID feedId, UUID userId) {
+        jdbcTemplate.update(
+                """
+                        DELETE FROM user_like WHERE user_id = :userId and feed_id = :feedId
+                        """,
+                new MapSqlParameterSource().addValue("userId", userId)
+                        .addValue("feedId", feedId)
 
-        var params = new MapSqlParameterSource().addValue("id", feedId);
-        jdbcTemplate.update(sql, params);
+        );
+    }
+
+    @Transactional
+    public void deleteLikes(UUID feedId) {
+        jdbcTemplate.update(
+                """
+                        DELETE FROM user_like WHERE feed_id = :feedId
+                        """,
+                new MapSqlParameterSource().addValue("feedId", feedId)
+
+        );
     }
 }

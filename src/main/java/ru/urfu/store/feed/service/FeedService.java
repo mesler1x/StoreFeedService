@@ -1,8 +1,6 @@
 package ru.urfu.store.feed.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.urfu.store.feed.model.Comment;
@@ -44,7 +42,9 @@ public class FeedService {
 
     public Paging<FeedDto> getAllFeeds(Integer limit, Integer offset) {
         var result = feedRepository.findAll(limit, offset);
-        var dtoList = result.getCurrentValues().stream().map(this::mapToDto).toList();
+        var dtoList = result.getCurrentValues().stream()
+                .map(this::mapToDto)
+                .peek(dto -> incrementWatchCount(dto.getId())).toList();
         return new Paging<>(result.getTotalCount(), result.getLimit(), result.getOffset(), dtoList);
     }
 
@@ -66,6 +66,7 @@ public class FeedService {
         }
 
         commentRepository.deleteByFeedId(id);
+        feedRepository.deleteLikes(id);
         feedRepository.deleteById(id);
     }
 
@@ -74,11 +75,7 @@ public class FeedService {
         if (!feedRepository.existsById(feedId)) {
             throw new ResourceNotFoundException("Feed not found with id: " + feedId);
         }
-
-        if (!userStarRepository.existsByUserIdAndFeedId(userId, feedId)) {
-            userStarRepository.save(userId, feedId);
-            feedRepository.incrementLikesCount(feedId);
-        }
+        feedRepository.incrementLikesCount(feedId, userId);
     }
 
     @Transactional
@@ -87,10 +84,8 @@ public class FeedService {
             throw new ResourceNotFoundException("Feed not found with id: " + feedId);
         }
 
-        if (userStarRepository.existsByUserIdAndFeedId(userId, feedId)) {
             userStarRepository.delete(userId, feedId);
-            feedRepository.decrementLikesCount(feedId);
-        }
+            feedRepository.decrementLikesCount(feedId, userId);
     }
 
     @Transactional
@@ -110,10 +105,7 @@ public class FeedService {
                 .feedId(request.getFeedId())
                 .build();
 
-        var savedComment = commentRepository.save(comment);
-        feedRepository.incrementCommentsCount(request.getFeedId());
-
-        return savedComment;
+        return commentRepository.save(comment);
     }
 
     private FeedDto mapToDto(Feed feed) {
