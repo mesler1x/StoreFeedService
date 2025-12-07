@@ -10,12 +10,14 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import ru.urfu.store.feed.model.Feed;
+import ru.urfu.store.feed.model.dto.Paging;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -110,7 +112,7 @@ public class FeedRepository {
         return feeds.stream().findFirst();
     }
 
-    public Page<Feed> findAll(Pageable pageable) {
+    public Paging<Feed> findAll(Integer limit, Integer offset) {
         var countSql = "SELECT COUNT(*) FROM feed";
         var total = jdbcTemplate.queryForObject(countSql, new MapSqlParameterSource(), Long.class);
 
@@ -121,12 +123,12 @@ public class FeedRepository {
             """;
 
         var params = new MapSqlParameterSource()
-                .addValue("limit", pageable.getPageSize())
-                .addValue("offset", pageable.getOffset());
+                .addValue("limit", limit)
+                .addValue("offset", offset);
 
         var feeds = jdbcTemplate.query(sql, params, this::mapRow);
 
-        return new PageImpl<>(feeds, pageable, total != null ? total : 0L);
+        return new Paging<>(total, limit, offset, feeds);
     }
 
     @Transactional

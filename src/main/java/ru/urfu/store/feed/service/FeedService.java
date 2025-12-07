@@ -7,10 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.urfu.store.feed.model.Comment;
 import ru.urfu.store.feed.model.Feed;
-import ru.urfu.store.feed.model.dto.CommentRequest;
-import ru.urfu.store.feed.model.dto.CreateFeedRequest;
-import ru.urfu.store.feed.model.dto.FeedDto;
-import ru.urfu.store.feed.model.dto.UpdateFeedRequest;
+import ru.urfu.store.feed.model.dto.*;
 import ru.urfu.store.feed.model.dto.exception.ResourceNotFoundException;
 import ru.urfu.store.feed.repository.CommentRepository;
 import ru.urfu.store.feed.repository.FeedRepository;
@@ -45,9 +42,10 @@ public class FeedService {
         return mapToDto(feed);
     }
 
-    public Page<FeedDto> getAllFeeds(Pageable pageable) {
-        var feedsPage = feedRepository.findAll(pageable);
-        return feedsPage.map(this::mapToDto);
+    public Paging<FeedDto> getAllFeeds(Integer limit, Integer offset) {
+        var result = feedRepository.findAll(limit, offset);
+        var dtoList = result.getCurrentValues().stream().map(this::mapToDto).toList();
+        return new Paging<>(result.getTotalCount(), result.getLimit(), result.getOffset(), dtoList);
     }
 
     public FeedDto updateFeed(UUID id, UpdateFeedRequest request) {
