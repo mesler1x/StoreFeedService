@@ -15,25 +15,25 @@ public class UserStarRepository {
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
     @Transactional
-    public void star(UUID userId, UUID feedId) {
+    public void star(String userMail, UUID feedId) {
         var sql = """
-                INSERT INTO user_star (user_id, feed_id)
-                VALUES (:userId, :feedId)
-                ON CONFLICT (user_id, feed_id) DO NOTHING
+                INSERT INTO user_star (user_mail, feed_id)
+                VALUES (:userMail, :feedId)
+                ON CONFLICT (user_mail, feed_id) DO NOTHING
                 """;
 
         var params = new MapSqlParameterSource()
-                .addValue("userId", userId)
+                .addValue("userMail", userMail)
                 .addValue("feedId", feedId);
 
         jdbcTemplate.update(sql, params);
     }
 
     @Transactional
-    public void unStar(UUID userId, UUID feedId) {
-        var sql = "DELETE FROM user_star WHERE user_id = :userId AND feed_id = :feedId";
+    public void unStar(String userMail, UUID feedId) {
+        var sql = "DELETE FROM user_star WHERE user_mail = :userMail AND feed_id = :feedId";
         var params = new MapSqlParameterSource()
-                .addValue("userId", userId)
+                .addValue("userMail", userMail)
                 .addValue("feedId", feedId);
 
         jdbcTemplate.update(sql, params);

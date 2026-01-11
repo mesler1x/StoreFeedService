@@ -15,7 +15,7 @@ import java.util.UUID;
 public class Comment {
     private UUID id;
     private String text;
-    private UUID userId;
+    private String userMail;
     private UUID feedId;
 
     @Builder.Default

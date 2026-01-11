@@ -13,24 +13,24 @@ CREATE TABLE comment
     id      UUID PRIMARY KEY                  DEFAULT gen_random_uuid(),
     text    TEXT                     NOT NULL,
     feed_id UUID                     NOT NULL,
-    user_id UUID                     NOT NULL,
+    user_mail TEXT                     NOT NULL,
     created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
     updated TIMESTAMP WITH TIME ZONE
 );
 
 CREATE TABLE user_like
 (
-    user_id UUID                     NOT NULL,
+    user_mail TEXT                     NOT NULL,
     feed_id UUID                     NOT NULL,
     created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    PRIMARY KEY (user_id, feed_id)
+    PRIMARY KEY (user_mail, feed_id)
 );
 
 CREATE TABLE user_star
 (
-    user_id UUID                     NOT NULL,
+    user_mail TEXT                     NOT NULL,
     feed_id UUID                     NOT NULL,
     created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-    PRIMARY KEY (user_id, feed_id)
+    PRIMARY KEY (user_mail, feed_id)
 );
 
