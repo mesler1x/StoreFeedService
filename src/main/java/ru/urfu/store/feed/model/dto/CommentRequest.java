@@ -19,7 +19,7 @@ public class CommentRequest {
     private String text;
 
     @NotNull(message = "User ID is required")
-    private UUID userId;
+    private String userMail;
 
     @NotNull(message = "Feed ID is required")
     private UUID feedId;

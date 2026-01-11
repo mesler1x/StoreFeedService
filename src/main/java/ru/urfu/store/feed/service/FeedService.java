@@ -74,21 +74,21 @@ public class FeedService {
     }
 
     @Transactional
-    public void likeFeed(UUID feedId, UUID userId) {
+    public void likeFeed(UUID feedId, String userMail) {
         if (!feedRepository.existsById(feedId)) {
             throw new ResourceNotFoundException("Feed not found with id: " + feedId);
         }
-        feedRepository.incrementLikesCount(feedId, userId);
+        feedRepository.incrementLikesCount(feedId, userMail);
     }
 
     @Transactional
-    public void unlikeFeed(UUID feedId, UUID userId) {
+    public void unlikeFeed(UUID feedId, String userMail) {
         if (!feedRepository.existsById(feedId)) {
             throw new ResourceNotFoundException("Feed not found with id: " + feedId);
         }
 
-        userStarRepository.unStar(userId, feedId);
-        feedRepository.decrementLikesCount(feedId, userId);
+        userStarRepository.unStar(userMail, feedId);
+        feedRepository.decrementLikesCount(feedId, userMail);
     }
 
     @Transactional
@@ -99,31 +99,31 @@ public class FeedService {
 
         var comment = Comment.builder()
                 .text(request.getText())
-                .userId(request.getUserId())
+                .userMail(request.getUserMail())
                 .feedId(request.getFeedId())
                 .build();
 
         return commentRepository.save(comment);
     }
 
-    public void starFeed(UUID feedId, UUID userId) {
+    public void starFeed(UUID feedId, String userMail) {
         if (!feedRepository.existsById(feedId)) {
             throw new ResourceNotFoundException("Feed not found with id: " + feedId);
         }
 
-        userStarRepository.star(userId, feedId);
+        userStarRepository.star(userMail, feedId);
     }
 
-    public void unStarFeed(UUID feedId, UUID userId) {
+    public void unStarFeed(UUID feedId, String userMail) {
         if (!feedRepository.existsById(feedId)) {
             throw new ResourceNotFoundException("Feed not found with id: " + feedId);
         }
 
-        userStarRepository.unStar(userId, feedId);
+        userStarRepository.unStar(userMail, feedId);
     }
 
-    public Paging<FeedDto> getFavourites(UUID userId, Integer limit, Integer offset) {
-        var result = feedRepository.findAllStarred(userId, limit, offset);
+    public Paging<FeedDto> getFavourites(String userMail, Integer limit, Integer offset) {
+        var result = feedRepository.findAllStarred(userMail, limit, offset);
         var dtoList = result.getCurrentValues().stream()
                 .map(this::mapToDto)
                 .peek(dto -> feedRepository.incrementWatchCount(dto.getId()))
@@ -139,6 +139,7 @@ public class FeedService {
                 .likesCount(feed.getLikesCount())
                 .watchCount(feed.getWatchCount())
                 .commentsCount(feed.getCommentsCount())
+                .comments(feed.getComments())
                 .created(feed.getCreated())
                 .updated(feed.getUpdated())
                 .build();

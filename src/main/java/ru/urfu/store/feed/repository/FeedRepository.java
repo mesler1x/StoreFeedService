@@ -22,6 +22,7 @@ import java.util.UUID;
 public class FeedRepository {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final CommentRepository commentRepository;
 
     private Feed mapRow(ResultSet rs, int rowNum) throws SQLException {
         return Feed.builder()
@@ -129,7 +130,7 @@ public class FeedRepository {
         var params = new MapSqlParameterSource().addValue("id", id);
 
         var feeds = jdbcTemplate.query(sql, params, this::mapRowWithCounts);
-
+        feeds.forEach(feed -> feed.setComments(commentRepository.findByFeedId(feed.getId())));
         return feeds.stream().findFirst();
     }
 
@@ -167,7 +168,7 @@ public class FeedRepository {
                 .addValue("offset", offset);
 
         var feeds = jdbcTemplate.query(sql, params, this::mapRowWithCounts);
-
+        feeds.forEach(feed -> feed.setComments(commentRepository.findByFeedId(feed.getId())));
         return new Paging<>(total, limit, offset, feeds);
     }
 
@@ -202,17 +203,17 @@ public class FeedRepository {
     }
 
     @Transactional
-    public void incrementLikesCount(UUID feedId, UUID userId) {
+    public void incrementLikesCount(UUID feedId, String userMail) {
         var sql = """
                 
-                    INSERT INTO user_like(user_id, feed_id) VALUES (
-                        :userId, :feedId                                                
+                    INSERT INTO user_like(user_mail, feed_id) VALUES (
+                        :userMail, :feedId                                                
                     ) ON CONFLICT DO NOTHING
                 """;
 
         var params = new MapSqlParameterSource()
                 .addValue("feedId", feedId)
-                .addValue("userId", userId);
+                .addValue("userMail", userMail);
         jdbcTemplate.update(sql, params);
     }
 
@@ -243,12 +244,12 @@ public class FeedRepository {
     }
 
     @Transactional
-    public void decrementLikesCount(UUID feedId, UUID userId) {
+    public void decrementLikesCount(UUID feedId, String userMail) {
         jdbcTemplate.update(
                 """
-                        DELETE FROM user_like WHERE user_id = :userId and feed_id = :feedId
+                        DELETE FROM user_like WHERE user_mail = :userMail and feed_id = :feedId
                         """,
-                new MapSqlParameterSource().addValue("userId", userId)
+                new MapSqlParameterSource().addValue("userMail", userMail)
                         .addValue("feedId", feedId)
 
         );
@@ -265,10 +266,10 @@ public class FeedRepository {
         );
     }
 
-    public Paging<Feed> findAllStarred(UUID userId, Integer limit, Integer offset) {
-        var countSql = "SELECT COUNT(f.*) FROM feed f JOIN user_star us on us.feed_id = f.id WHERE user_id = :userId";
+    public Paging<Feed> findAllStarred(String userMail, Integer limit, Integer offset) {
+        var countSql = "SELECT COUNT(f.*) FROM feed f JOIN user_star us on us.feed_id = f.id WHERE user_mail = :userMail";
         var total = jdbcTemplate.queryForObject(countSql, new MapSqlParameterSource().addValue(
-                "userId", userId
+                "userMail", userMail
         ), Long.class);
 
         var sql = """
@@ -280,8 +281,8 @@ public class FeedRepository {
                 INNER JOIN (
                     SELECT feed_id, COUNT(*) AS stars_count 
                     FROM user_star 
-                    WHERE user_id = :userId
-                    GROUP BY feed_id, user_id
+                    WHERE user_mail = :userMail
+                    GROUP BY feed_id, user_mail
                 ) s ON f.id = s.feed_id
                 LEFT JOIN (
                     SELECT feed_id, COUNT(*) AS likes_count 
@@ -298,7 +299,7 @@ public class FeedRepository {
                 """;
 
         var params = new MapSqlParameterSource()
-                .addValue("userId", userId)
+                .addValue("userMail", userMail)
                 .addValue("limit", limit)
                 .addValue("offset", offset);
 

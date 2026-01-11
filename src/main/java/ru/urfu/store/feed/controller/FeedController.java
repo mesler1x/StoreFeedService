@@ -66,16 +66,16 @@ public class FeedController {
     @PostMapping("/{feed_id}/like")
     public void likeFeed(
             @PathVariable(name = "feed_id") UUID feedId,
-            @RequestParam(name = "user_id") UUID userId) {
-        feedService.likeFeed(feedId, userId);
+            @RequestParam(name = "user_mail") String userMail) {
+        feedService.likeFeed(feedId, userMail);
     }
 
     @Operation(summary = "Удалить лайк новости")
     @DeleteMapping("/{feed_id}/unlike")
     public void unlikeFeed(
             @PathVariable(name = "feed_id") UUID feedId,
-            @RequestParam(name = "user_id") UUID userId) {
-        feedService.unlikeFeed(feedId, userId);
+            @RequestParam(name = "user_mail") String userMail) {
+        feedService.unlikeFeed(feedId, userMail);
     }
 
     @Operation(summary = "Оставить комментарий к новости")
@@ -90,29 +90,29 @@ public class FeedController {
     @PostMapping("{feed_id}/star")
     public void starFeed(
             @PathVariable(name = "feed_id") UUID feedId,
-            @RequestParam(name = "user_id") UUID userId
+            @RequestParam(name = "user_mail") String userMail
     ) {
-        feedService.starFeed(feedId, userId);
+        feedService.starFeed(feedId, userMail);
     }
 
     @Operation(summary = "Убрать новость из избранного")
     @DeleteMapping("{feed_id}/unstar")
     public void unStarFeed(
             @PathVariable(name = "feed_id") UUID feedId,
-            @RequestParam(name = "user_id") UUID userId
+            @RequestParam(name = "user_mail") String userMail
     ) {
-        feedService.unStarFeed(feedId, userId);
+        feedService.unStarFeed(feedId, userMail);
     }
 
     @Operation(summary = "Показать избранное")
     @GetMapping("/favourites")
     public Paging<FeedDto> getFavourites(
-            @RequestParam(name = "user_id") UUID userId,
+            @RequestParam(name = "user_mail") String userMail,
             @RequestParam(name = "limit", required = false, defaultValue = "100")
             Integer limit,
             @RequestParam(name = "offset", required = false, defaultValue = "0")
             Integer offset
     ) {
-        return feedService.getFavourites(userId, limit, offset);
+        return feedService.getFavourites(userMail, limit, offset);
     }
 }

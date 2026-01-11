@@ -25,7 +25,7 @@ public class CommentRepository {
         return Comment.builder()
                 .id(rs.getObject("id", UUID.class))
                 .text(rs.getString("text"))
-                .userId(rs.getObject("user_id", UUID.class))
+                .userMail(rs.getString("user_mail"))
                 .feedId(rs.getObject("feed_id", UUID.class))
                 .created(convertToZonedDateTime(rs.getTimestamp("created")))
                 .updated(convertToZonedDateTime(rs.getTimestamp("updated")))
@@ -55,14 +55,14 @@ public class CommentRepository {
 
     private Comment insert(Comment comment) {
         var sql = """
-                INSERT INTO comment (text, user_id, feed_id, created, updated)
-                VALUES (:text, :userId, :feedId, :created, :updated)
+                INSERT INTO comment (text, user_mail, feed_id, created, updated)
+                VALUES (:text, :userMail, :feedId, :created, :updated)
                 RETURNING id
                 """;
 
         var params = new MapSqlParameterSource()
                 .addValue("text", comment.getText())
-                .addValue("userId", comment.getUserId())
+                .addValue("userMail", comment.getUserMail())
                 .addValue("feedId", comment.getFeedId())
                 .addValue("created", convertToTimestamp(comment.getCreated()))
                 .addValue("updated", convertToTimestamp(comment.getUpdated()));
@@ -106,9 +106,9 @@ public class CommentRepository {
         jdbcTemplate.update(sql, params);
     }
 
-    public List<Comment> findByUserId(UUID userId) {
-        var sql = "SELECT * FROM comment WHERE user_id = :userId ORDER BY created DESC";
-        var params = new MapSqlParameterSource().addValue("userId", userId);
+    public List<Comment> findByUserId(String userMail) {
+        var sql = "SELECT * FROM comment WHERE user_mail = :userMail ORDER BY created DESC";
+        var params = new MapSqlParameterSource().addValue("userMail", userMail);
 
         return jdbcTemplate.query(sql, params, this::mapRow);
     }
