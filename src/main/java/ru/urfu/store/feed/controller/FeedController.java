@@ -12,6 +12,7 @@ import ru.urfu.store.feed.service.FeedService;
 
 import java.util.UUID;
 
+@CrossOrigin(originPatterns = {"http://localhost:3000", "*"})
 @Tag(name = "Сервис взаимодействия с новостной лентой")
 @RestController
 @RequiredArgsConstructor
